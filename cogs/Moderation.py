@@ -108,10 +108,6 @@ class Mod(commands.Cog, name='Moderation'):
         await ctx.send(embed=embed)
         time.sleep(1)
         await ctx.channel.purge(limit=amount+2)
-        embed=discord.Embed(title="MESSAGE DELETED", description =f"deleted {amount} messages")
-        await ctx.send(embed=embed)
-        time.sleep(2)
-        await ctx.channel.purge(limit=1)
 
     @purge.error
     async def purge_error(self,ctx, error):
