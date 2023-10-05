@@ -464,7 +464,10 @@ async def warnings(ctx, member: discord.Member = None):
         await ctx.send(embed=embed)
     except KeyError:  # no warnings
         await ctx.send("This user has no warnings.")
-
+@warnings.error
+async def warnings_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send("YOU DON'T HAVE PERMS TO DO IT, SIKE!.")
 
 
 
