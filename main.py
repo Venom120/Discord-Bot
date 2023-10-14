@@ -472,7 +472,7 @@ async def warnings_error(ctx, error):
 
 
 
-extensions = ["cogs.Moderation", "cogs.Poll"]
+extensions = ["cogs.Moderation", "cogs.Poll","cogs.WelcomeLeave"]
 
 async def load_extensions():
     for extension in extensions:

@@ -105,8 +105,8 @@ class Mod(commands.Cog, name='Moderation'):
     @commands.has_permissions(manage_messages=True)
     async def purge(self,ctx, amount=1):
         embed=discord.Embed(title="DELETING MESSAGES....", description ="** **")
-        await ctx.send(embed=embed)
-        time.sleep(1)
+        await ctx.send(embed=embed, delete_after=0.5)
+        time.sleep(0.5)
         await ctx.channel.purge(limit=amount+2)
 
     @purge.error
