@@ -48,12 +48,13 @@ class WelcomeLeave(commands.Cog):
     
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        channel2 = self.client.get_channel(878191679759323147)
-        list2 = current()
-        embed = discord.Embed(title = "Member left", description = f"{member.mention} has left the server!", color = discord.Color.orange())
-        embed.set_footer(text = f"ID: {member.id} • {list2[4]} {list2[3]}")
-        # embed.set_thumbnail(url = member.avatar_url)
-        await channel2.send(embed = embed)
+        if member.guild.id == 877889271653097524:
+            channel2 = self.client.get_channel(878191679759323147)
+            list2 = current()
+            embed = discord.Embed(title = "Member left", description = f"{member.mention} has left the server!", color = discord.Color.orange())
+            embed.set_footer(text = f"ID: {member.id} • {list2[4]} {list2[3]}")
+            # embed.set_thumbnail(url = member.avatar_url)
+            await channel2.send(embed = embed)
 
 
 async def setup(client):
