@@ -31,7 +31,7 @@ class WelcomeLeave(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        if member.guild.id == 877889271653097524:
+        if member.guild.id == 877889271653097526:
             channel1 = self.client.get_channel(877889271653097526)
             embed = discord.Embed(title = "Member joined", description = f"Welcome {member.mention} to the server!", color = discord.Color.blue())
             date = int(member.created_at.strftime("%#d"))
@@ -41,6 +41,13 @@ class WelcomeLeave(commands.Cog):
             d_date =  list1[0] - date
             d_month =  list1[1] - month
             d_year =  list1[2] - year
+            # Adjust for negative months or days
+            if d_date < 0:
+                d_month -= 1
+                d_date += 30  # Assuming an average month length of 30 days
+            if d_month < 0:
+                d_year -= 1
+                d_month += 12
             embed.add_field(name = "Account age", value = f"{d_year} years, {d_month} months, {d_date} days")
             embed.set_footer(text = f"ID: {member.id} • {list1[0]}/{list1[1]}/{list1[2]} {list1[3]}")
             # embed.set_thumbnail(url = member.avatar_url)
