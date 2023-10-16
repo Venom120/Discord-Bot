@@ -26,22 +26,25 @@ def current():
 class WelcomeLeave(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.welcome_channel_id = 877889271653097526
+        self.leave_channel_id = 877889271653097526
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        channel1 = self.client.get_channel(877889271653097526)
-        embed = discord.Embed(title = "Member joined", description = f"Welcome {member.mention} to the server!", color = discord.Color.blue())
-        date = int(member.created_at.strftime("%#d"))
-        month = int(member.created_at.strftime("%m"))
-        year = int(member.created_at.strftime("%Y"))
-        list1 = current()
-        d_date =  list1[0] - date
-        d_month =  list1[1] - month
-        d_year =  list1[2] - year
-        embed.add_field(name = "Account age", value = f"{d_year} years, {d_month} months, {d_date} days")
-        embed.set_footer(text = f"ID: {member.id} • {list1[0]}/{list1[1]}/{list1[2]} {list1[3]}")
-        # embed.set_thumbnail(url = member.avatar_url)
-        await channel1.send(embed = embed)
+        if member.guild.id == 877889271653097524:
+            channel1 = self.client.get_channel(877889271653097526)
+            embed = discord.Embed(title = "Member joined", description = f"Welcome {member.mention} to the server!", color = discord.Color.blue())
+            date = int(member.created_at.strftime("%#d"))
+            month = int(member.created_at.strftime("%m"))
+            year = int(member.created_at.strftime("%Y"))
+            list1 = current()
+            d_date =  list1[0] - date
+            d_month =  list1[1] - month
+            d_year =  list1[2] - year
+            embed.add_field(name = "Account age", value = f"{d_year} years, {d_month} months, {d_date} days")
+            embed.set_footer(text = f"ID: {member.id} • {list1[0]}/{list1[1]}/{list1[2]} {list1[3]}")
+            # embed.set_thumbnail(url = member.avatar_url)
+            await channel1.send(embed = embed)
     
     @commands.Cog.listener()
     async def on_member_remove(self, member):
