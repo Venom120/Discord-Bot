@@ -230,8 +230,6 @@ class CustomHelpCommand(commands.HelpCommand):
         else:
                 await self.get_destination().send("command not found!")
 
-        
-
 
 intents = discord.Intents.all()
 client = commands.Bot(
@@ -547,6 +545,7 @@ async def warnings(ctx, member: discord.Member = None):
 async def warnings_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
         await ctx.send("YOU DON'T HAVE PERMS TO DO IT, SIKE!.")
+
 
 
 

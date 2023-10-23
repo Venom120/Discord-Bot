@@ -143,7 +143,7 @@ class Mod(commands.Cog, name='Moderation'):
 
 
     @commands.command()
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(administrator=True)
     async def spam(self, ctx, number:int, *, text:str):
         for i in range(0,number):
             await ctx.send(text)
