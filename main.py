@@ -460,8 +460,9 @@ async def deletewarn(ctx, member: discord.Member = None, id: int = None):
     try:
         async with aiofiles.open(f"{ctx.guild.id}.txt", mode="r") as file:
             lines = await file.readlines()
+            await file.write("")
             for line in lines:
-                if str(line[2]) == str(id):
+                if line.startswith(f"{member.id} {ctx.author.id} {id} "):
                     commands.warnings[ctx.guild.id][member.id][0] -= 1
                     commands.warnings[ctx.guild.id][member.id][1].pop(id - 1)
                     return await ctx.send(f"Deleted warning {id} from {member}.")
