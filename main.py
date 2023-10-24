@@ -458,7 +458,7 @@ async def deletewarn(ctx, member: discord.Member = None, id: int = None):
     if id is None:
         return await ctx.send("Please provide a warning id to delete.")
     try:
-        async with aiofiles.open(f"{ctx.guild.id}.txt", mode="w") as file:
+        async with aiofiles.open(f"{ctx.guild.id}.txt", mode="r") as file:
             lines = await file.readlines()
             for line in lines:
                 if str(line[2]) == str(id):
@@ -466,7 +466,8 @@ async def deletewarn(ctx, member: discord.Member = None, id: int = None):
                     commands.warnings[ctx.guild.id][member.id][1].pop(id - 1)
                     return await ctx.send(f"Deleted warning {id} from {member}.")
                 else:
-                    await file.writelines(f"{line}")
+                    async with aiofiles.open(f"{ctx.guild.id}.txt", mode="a") as f:
+                        await f.write(f"{line}")
     except Exception as e:
         return await ctx.send(f"{e}\nContact Venom120")
 
