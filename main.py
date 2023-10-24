@@ -242,24 +242,27 @@ commands.warnings = {}
 
 @client.event
 async def on_ready():
-    for guild in client.guilds:
-        commands.warnings[guild.id] = {}
-        async with aiofiles.open(f"{guild.id}.txt", mode="a") as temp:
-            pass
-        async with aiofiles.open(f"{guild.id}.txt", mode="r") as file:
-            lines = await file.readlines()
-            for line in lines:
-                data = line.split(" ")
-                member_id = int(data[0])
-                admin_id = int(data[1])
-                warnings_id = int(data[2])
-                reason = " ".join(data[3:]).strip("\n")
-                try:
-                    commands.warnings[guild.id][member_id][0] += 1
-                    commands.warnings[guild.id][member_id][1].append((admin_id, warnings_id, reason))
-                except KeyError:
-                    commands.warnings[guild.id][member_id] = [1, [(admin_id, warnings_id, reason)]]
-    print(client.user.name + " is ready.")
+    try:
+        for guild in client.guilds:
+            commands.warnings[guild.id] = {}
+            async with aiofiles.open(f"{guild.id}.txt", mode="a") as temp:
+                pass
+            async with aiofiles.open(f"{guild.id}.txt", mode="r") as file:
+                lines = await file.readlines()
+                for line in lines:
+                    data = line.split(" ")
+                    member_id = int(data[0])
+                    admin_id = int(data[1])
+                    warnings_id = int(data[2])
+                    reason = " ".join(data[3:]).strip("\n")
+                    try:
+                        commands.warnings[guild.id][member_id][0] += 1
+                        commands.warnings[guild.id][member_id][1].append((admin_id, warnings_id, reason))
+                    except KeyError:
+                        commands.warnings[guild.id][member_id] = [1, [(admin_id, warnings_id, reason)]]
+        print(client.user.name + " is ready.")
+    except Exception as e:
+        print(e)
 
 
 @client.event
