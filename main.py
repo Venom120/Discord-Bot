@@ -240,10 +240,8 @@ client = commands.Bot(
 )
 commands.warnings = {}
 
-
 @client.event
 async def on_ready():
-
     for guild in client.guilds:
         commands.warnings[guild.id] = {}
         async with aiofiles.open(f"{guild.id}.txt", mode="a") as temp:
@@ -254,12 +252,13 @@ async def on_ready():
                 data = line.split(" ")
                 member_id = int(data[0])
                 admin_id = int(data[1])
-                reason = " ".join(data[2:]).strip("\n")
+                reason = " ".join(data[3:]).strip("\n")
+                warnings_id = int(data[2])
                 try:
                     commands.warnings[guild.id][member_id][0] += 1
-                    commands.warnings[guild.id][member_id][1].append((admin_id, reason))
+                    commands.warnings[guild.id][member_id][1].append((admin_id, warnings_id, reason))
                 except KeyError:
-                    commands.warnings[guild.id][member_id] = [1, [(admin_id, reason)]]
+                    commands.warnings[guild.id][member_id] = [1, [(admin_id, warnings_id, reason)]]
     print(client.user.name + " is ready.")
 
 
@@ -427,16 +426,16 @@ async def warn(ctx, member: discord.Member = None, *, reason=None):
         return await ctx.send("Please provide a reason for warning this user.")
     try:
         first_warning = False
-        warn_id+=1
+        warn_id = commands.warnings[ctx.guild.id][member.id][1][-1][1] + 1
         commands.warnings[ctx.guild.id][member.id][0] += 1
-        commands.warnings[ctx.guild.id][member.id][1].append((ctx.author.id, reason, warn_id))
+        commands.warnings[ctx.guild.id][member.id][1].append((ctx.author.id, warn_id, reason))
     except KeyError:
         first_warning = True
         warn_id = 1
-        commands.warnings[ctx.guild.id][member.id] = [1, [(ctx.author.id, reason, warn_id)]]
+        commands.warnings[ctx.guild.id][member.id] = [1, [(ctx.author.id, warn_id, reason)]]
     count = commands.warnings[ctx.guild.id][member.id][0]
     async with aiofiles.open(f"{ctx.guild.id}.txt", mode="a") as file:
-        await file.write(f"{member.id} {ctx.author.id} {reason} {warn_id}\n")
+        await file.write(f"{member.id} {ctx.author.id} {warn_id} {reason}\n")
     await ctx.send(
         f"{member.mention} has {count} {'warning' if first_warning else 'warnings'}."
     )
@@ -456,14 +455,14 @@ async def deletewarn(ctx, member: discord.Member = None, id: int = None):
         return await ctx.send("Please provide a warning id to delete.")
     try:
         async with aiofiles.open(f"{ctx.guild.id}.txt", mode="w") as file:
-            for lines in file.readlines():
-                line = lines.split(' ')
-                if str(line[3]) == str(id):
+            lines = await file.readlines()
+            for line in lines:
+                if str(line[2]) == str(id):
                     commands.warnings[ctx.guild.id][member.id][0] -= 1
                     commands.warnings[ctx.guild.id][member.id][1].pop(id - 1)
                     return await ctx.send(f"Deleted warning {id} from {member}.")
                 else:
-                    await file.write(f"{line}\n")
+                    await file.writelines(f"{line}")
     except Exception as e:
         return await ctx.send(f"{e}\nContact Venom120")
 
@@ -479,12 +478,14 @@ async def warnings(ctx, member: discord.Member = None):
         colour=discord.Colour.red(),
     )
     try:
-        for admin_id, reason, warning_id in commands.warnings[ctx.guild.id][member.id][1]:
+        for admin_id, warning_id, reason in commands.warnings[ctx.guild.id][member.id][1]:
             admin = ctx.guild.get_member(admin_id)
             embed.description += f"**Warning {warning_id}** given by: {admin}, for: **'{reason}'**\n"
         await ctx.send(embed=embed)
     except KeyError:  # no warnings
         await ctx.send("This user has no warnings.")
+    except Exception as e:
+        await ctx.send(e)
 @warnings.error
 async def warnings_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
@@ -492,6 +493,17 @@ async def warnings_error(ctx, error):
     if isinstance(error, commands.BadArgument):
         await ctx.send("User not found!!")
 
+@client.command()
+@commands.has_role(877895130047213609)
+@commands.has_permissions(administrator=True)
+async def delete_all_warns(ctx):
+    try:
+        commands.warnings[ctx.guild.id] = {}
+        async with aiofiles.open(f"{ctx.guild.id}.txt", mode="w") as file:
+            await file.write("")
+        await ctx.send("Deleted all warnings.")
+    except Exception as e:
+        await ctx.send(e)
 
 
 def download_image(url, name, id, times):
