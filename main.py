@@ -33,7 +33,7 @@ class CustomHelpCommand(commands.HelpCommand):
             value="1.kick \n2.ban \n3.unban \n4.purge \n5.mute \n6.unmute \n7.lock \n8.unlock \n9.warn \n10.warnings"
         )
         await self.get_destination().send(embed=em)
-    
+
     async def send_command_help(self, command):
         if command.qualified_name.lower() == "timer":
             embed=discord.Embed(
@@ -45,7 +45,7 @@ class CustomHelpCommand(commands.HelpCommand):
             name="Examples->", value="vtimer <seconds> \nvtimer 20"
             )
             await self.get_destination().send(embed=embed)
-    
+
         elif command.qualified_name.lower() == "hi" or command.qualified_name.lower() == "hello" or command.qualified_name.lower() == "hey" or command.qualified_name.lower() == "heyy":
             embed=discord.Embed(
             title="**HI**",
@@ -78,7 +78,7 @@ class CustomHelpCommand(commands.HelpCommand):
             name="Examples->", value="vping"
             )
             await self.get_destination().send(embed=embed)
-        
+
         elif command.qualified_name.lower() == "textspam" or command.qualified_name.lower() == "ts":
             embed=discord.Embed(
             title="**TEXTSPAM**",
@@ -90,7 +90,7 @@ class CustomHelpCommand(commands.HelpCommand):
             name="Examples->", value="vtextspam <number of times> <text> , \nvtextspam 10 hi \nvtextspam 2 hello \nvts 6 hi"
             )
             await self.get_destination().send(embed=embed)
-        
+
         elif command.qualified_name.lower() == "kick" or command.qualified_name.lower() == "k":
             embed=discord.Embed(
             title="**kick**",
@@ -101,7 +101,7 @@ class CustomHelpCommand(commands.HelpCommand):
             embed.add_field(
             name="Examples->", value="vkick <mention user> <reason>, \nvkick @venom#1234 idk \nvk @venom#1111 idk")
             await self.get_destination().send(embed=embed)
-        
+
         elif command.qualified_name.lower() == "ban" or command.qualified_name.lower() == "b":
             embed=discord.Embed(
             title="**ban**",
@@ -134,7 +134,7 @@ class CustomHelpCommand(commands.HelpCommand):
             embed.add_field(
             name="Examples->", value="vpurge <number of messages> , \nvpurge 5 \nvp 10")
             await self.get_destination().send(embed=embed)
-        
+
         elif command.qualified_name.lower() == "mute" or command.qualified_name.lower() == "m":
             embed=discord.Embed(
             title="**MUTE**",
@@ -146,7 +146,7 @@ class CustomHelpCommand(commands.HelpCommand):
             name="Examples->", value="vmute <user> <reason> \nvmute @venom#2341 idk \nvmute @venom120#1234 idk\nvm @venom#9876 idk"
             )
             await self.get_destination().send(embed=embed)
-        
+
         elif command.qualified_name.lower() == "unmute" or command.qualified_name.lower() == "um":
             embed=discord.Embed(
             title="**UNMUTE**",
@@ -233,7 +233,7 @@ class CustomHelpCommand(commands.HelpCommand):
 
 intents = discord.Intents.all()
 client = commands.Bot(
-    command_prefix=commands.when_mentioned_or('v','V'),
+    command_prefix=commands.when_mentioned_or('v','V','v ','V '),
     help_command=CustomHelpCommand(),
     insensitive=True,
     intents=intents
@@ -264,11 +264,9 @@ async def on_ready():
     except Exception as e:
         print(e)
 
-
 @client.event
 async def on_guild_join(guild):
     client.warnings[guild.id] = {}
-
 
 @client.event
 async def on_member_join(ctx):
@@ -371,8 +369,6 @@ async def roll(ctx, number1: int, number2=-2):
         for i in range(number1, number2 + 1):
             total.append(i)
         await ctx.send(total[random.randint(0, number2 - number1)])
-
-
 @roll.error
 async def roll_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
@@ -399,7 +395,7 @@ async def textspam(ctx, repeat: int, *, text: str):
         if repeat > 0 and repeat <= 10:
             for i in range(1, repeat + 1):
                 await ctx.send(z)
-                time.sleep(1)
+                time.sleep(0.7)
         elif repeat < 0:
             await ctx.send("you dumbo i can't send number of text in negatives")
         elif repeat > 10:
@@ -408,8 +404,6 @@ async def textspam(ctx, repeat: int, *, text: str):
             await ctx.send("error!")
     else:
         await ctx.send("not allowed to use this command here!")
-
-
 @textspam.error
 async def textspam_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
@@ -429,9 +423,9 @@ async def warn(ctx, member: discord.Member = None, *, reason=None):
         return await ctx.send("Please provide a reason for warning this user.")
     try:
         first_warning = False
-        warn_id = commands.warnings[ctx.guild.id][member.id][1][-1][1] + 1
-        commands.warnings[ctx.guild.id][member.id][0] += 1
+        warn_id = commands.warnings[ctx.guild.id][member.id][1][-1][1] + 1 
         commands.warnings[ctx.guild.id][member.id][1].append((ctx.author.id, warn_id, reason))
+        commands.warnings[ctx.guild.id][member.id][0] += 1
     except KeyError:
         first_warning = True
         warn_id = 1
@@ -442,7 +436,7 @@ async def warn(ctx, member: discord.Member = None, *, reason=None):
             await file.write(f"{member.id} {ctx.author.id} {warn_id} {reason}\n")
         await ctx.send(f"{member.mention} has {count} {'warning' if first_warning else 'warnings'}.")
     except Exception as e:
-        print(e)
+        await ctx.send(f"{e}\nContact Venom_120")
 @warn.error
 async def warn_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
@@ -450,27 +444,6 @@ async def warn_error(ctx, error):
     if isinstance(error, commands.BadArgument):
         await ctx.send("User not found!!")
 
-@client.command(aliases=["delwarn","delwarns","dwarn","dwarns","dw"])
-@commands.has_permissions(kick_members=True)
-async def deletewarn(ctx, member: discord.Member = None, id: int = None):
-    if member is None:
-        return await ctx.send("The provided member could not be found or you forgot to provide one.")
-    if id is None:
-        return await ctx.send("Please provide a warning id to delete.")
-    try:
-        async with aiofiles.open(f"{ctx.guild.id}.txt", mode="r") as file:
-            lines = await file.readlines()
-            await file.write("")
-            for line in lines:
-                if line.startswith(f"{member.id} {ctx.author.id} {id} "):
-                    commands.warnings[ctx.guild.id][member.id][0] -= 1
-                    commands.warnings[ctx.guild.id][member.id][1].pop(id - 1)
-                    return await ctx.send(f"Deleted warning {id} from {member}.")
-                else:
-                    async with aiofiles.open(f"{ctx.guild.id}.txt", mode="a") as f:
-                        await f.write(f"{line}")
-    except Exception as e:
-        return await ctx.send(f"{e}\nContact Venom120")
 
 @client.command(aliases=["warning", "warns"])
 @commands.has_permissions(kick_members=True)
@@ -487,11 +460,14 @@ async def warnings(ctx, member: discord.Member = None):
         for admin_id, warning_id, reason in commands.warnings[ctx.guild.id][member.id][1]:
             admin = ctx.guild.get_member(admin_id)
             embed.description += f"**Warning {warning_id}** given by: {admin}, for: **'{reason}'**\n"
+        embed.description += f"Total {len(commands.warnings[ctx.guild.id][member.id][1])} Warnings"
         await ctx.send(embed=embed)
+    except IndexError:
+        return await ctx.send("No warnings on this user!")
     except KeyError:  # no warnings
         await ctx.send("This user has no warnings.")
     except Exception as e:
-        await ctx.send(e)
+        await ctx.send(f"{e}\nCOntact Venom_120")
 @warnings.error
 async def warnings_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
@@ -499,17 +475,43 @@ async def warnings_error(ctx, error):
     if isinstance(error, commands.BadArgument):
         await ctx.send("User not found!!")
 
-@client.command()
-@commands.has_role(877895130047213609)
-@commands.has_permissions(administrator=True)
-async def delete_all_warns(ctx):
-    try:
-        commands.warnings[ctx.guild.id] = {}
+
+@client.command(aliases=["delwarn","delwarns","dwarn","dwarns","dw"])
+@commands.has_permissions(kick_members=True)
+async def deletewarn(ctx, member: discord.Member = None, id = None):
+    if member is None:
+        return await ctx.send("The provided member could not be found or you forgot to provide one.")
+    if id is None:
+        return await ctx.send("Please provide a warning id to delete.")
+    if str(id) == "all":
+        commands.warnings[ctx.guild.id][member.id] = []
         async with aiofiles.open(f"{ctx.guild.id}.txt", mode="w") as file:
             await file.write("")
-        await ctx.send("Deleted all warnings.")
+        return await ctx.send(f"Deleted all warnings from {member}.")
+    try:
+        async with aiofiles.open(f"{ctx.guild.id}.txt", mode="w") as file:
+            for x in commands.warnings[ctx.guild.id][member.id][1]:
+                if str(x[1]) == str(id):                
+                    commands.warnings[ctx.guild.id][member.id][0] -= 1
+                    for y in commands.warnings[ctx.guild.id][member.id][1]:
+                        if str(y[1]) == str(id):
+                            commands.warnings[ctx.guild.id][member.id][1].remove((y))
+                    return await ctx.send(f"Deleted warning id - {int(id)} from {member}.")
+                else:
+                    await file.write(f"{member.id} {x[0]} {x[1]} {x[2]}\n")
+            await ctx.send("Entered id not found")
+    except IndexError:
+        return await ctx.send("No warnings on this user!")
+    except KeyError:
+        return await ctx.send("No warnings on this user!")
     except Exception as e:
-        await ctx.send(e)
+        return await ctx.send(f"{e}\nContact Venom_120")
+@deletewarn.error
+async def deletewarn_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send("YOU DON'T HAVE PERMS TO DO IT, SIKE!.")
+    if isinstance(error, commands.BadArgument):
+        await ctx.send("User not found!!")
 
 
 def download_image(url, name, id, times):
@@ -521,11 +523,10 @@ def download_image(url, name, id, times):
         os.makedirs(f"./emojis/{directory}")
     with open(f"emojis/{directory}/{name}.{extension}", 'wb') as out_file:
         shutil.copyfileobj(response.raw, out_file)
-        
 @client.command()
 @commands.has_permissions(administrator=True)
 async def downloademoji(ctx):
-    print("Started downloading")
+    print(f"Started downloading by {ctx.author}")
     await ctx.send("Started downloading emojis in local server of the bot")
     i = 1
     for guild_s in client.guilds:
@@ -548,11 +549,11 @@ async def downloademoji(ctx):
             await ctx.send("Finished downloading this servers emoji")
         else:
             continue
-
 @downloademoji.error
 async def downloademoji_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
         await ctx.send("YOU DON'T HAVE PERMS TO DO IT, SIKE!!.")
+
 
 @client.command()
 @commands.has_permissions(administrator=True)
@@ -581,7 +582,6 @@ async def uploademoji(ctx, g_id: int, number: int):
     except Exception as e:
         print(e)
         await ctx.send(f'Error: {e}')
-
 @uploademoji.error
 async def uploademoji_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
@@ -595,21 +595,19 @@ async def uploademoji_error(ctx, error):
 
 
 extensions = ["cogs.Moderation", "cogs.Poll","cogs.WelcomeLeave"]
-
 async def load_extensions():
     for extension in extensions:
         try:
             await client.load_extension(extension)
         except Exception as e:
             print(f"{extension} not Loaded\n{e}")
-            
 async def main():
     async with client:
         keep_alive()
         my_secret = os.environ["TOKEN"]
         await load_extensions()
         await client.start(my_secret)
-        
+
 
 
 asyncio.run(main())
