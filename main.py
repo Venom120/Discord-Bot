@@ -442,6 +442,51 @@ async def warn(ctx, member: discord.Member = None, *, reason=None):
 async def warn_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
         await ctx.send("YOU DON'T HAVE PERMS TO DO IT, SIKE!.")
+    if isinstance(error, commands.BadArgument):
+        await ctx.send("User not found!!")
+
+@client.command(aliases=["delwarn","delwarns","dwarn","dwarns","dw"])
+@commands.has_permissions(kick_members=True)
+async def deletewarn(ctx, member: discord.Member = None, id: int = None):
+    if member is None:
+        return await ctx.send("The provided member could not be found or you forgot to provide one.")
+    if id is None:
+        return await ctx.send("Please provide a warning id to delete.")
+    try:
+        commands.warnings[ctx.guild.id][member.id][0] -= 1
+        commands.warnings[ctx.guild.id][member.id][1].pop(id - 1)
+        return await ctx.send(f"Deleted warning {id} from {member}.")
+    except Exception as e:
+        return await ctx.send(f"{e}\nContact Venom120")
+
+@client.command(aliases=["warning", "warns"])
+@commands.has_permissions(kick_members=True)
+async def warnings(ctx, member: discord.Member = None):
+    if member is None:
+        return await ctx.send(
+            "The provided member could not be found or you forgot to provide one.")
+    embed = discord.Embed(
+        title=f"Displaying Warnings for {member}",
+        description="",
+        colour=discord.Colour.red(),
+    )
+    try:
+        i = 1
+        for admin_id, reason in commands.warnings[ctx.guild.id][member.id][1]:
+            admin = ctx.guild.get_member(admin_id)
+            embed.description += f"**Warning {i}** given by: {admin} for: **'{reason}'**.\n"
+            i += 1
+        await ctx.send(commands.warnings[ctx.guild.id][member.id])
+        await ctx.send(embed=embed)
+    except KeyError:  # no warnings
+        await ctx.send("This user has no warnings.")
+@warnings.error
+async def warnings_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send("YOU DON'T HAVE PERMS TO DO IT, SIKE!.")
+    if isinstance(error, commands.BadArgument):
+        await ctx.send("User not found!!")
+
 
 
 def download_image(url, name, id, times):
@@ -521,30 +566,6 @@ async def uploademoji_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
         await ctx.send("YOU DON'T HAVE PERMS TO DO IT, SIKE!!.")
 
-@client.command(aliases=["warning", "warns"])
-@commands.has_permissions(kick_members=True)
-async def warnings(ctx, member: discord.Member = None):
-    if member is None:
-        return await ctx.send(
-            "The provided member could not be found or you forgot to provide one.")
-    embed = discord.Embed(
-        title=f"Displaying Warnings for {member}",
-        description="",
-        colour=discord.Colour.red(),
-    )
-    try:
-        i = 1
-        for admin_id, reason in commands.warnings[ctx.guild.id][member.id][1]:
-            admin = ctx.guild.get_member(admin_id)
-            embed.description += f"**Warning {i}** given by: {admin} for: {reason}'*.\n"
-            i += 1
-        await ctx.send(embed=embed)
-    except KeyError:  # no warnings
-        await ctx.send("This user has no warnings.")
-@warnings.error
-async def warnings_error(ctx, error):
-    if isinstance(error, commands.MissingPermissions):
-        await ctx.send("YOU DON'T HAVE PERMS TO DO IT, SIKE!.")
 
 
 
