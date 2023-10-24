@@ -427,14 +427,16 @@ async def warn(ctx, member: discord.Member = None, *, reason=None):
         return await ctx.send("Please provide a reason for warning this user.")
     try:
         first_warning = False
+        warn_id+=1
         commands.warnings[ctx.guild.id][member.id][0] += 1
-        commands.warnings[ctx.guild.id][member.id][1].append((ctx.author.id, reason))
+        commands.warnings[ctx.guild.id][member.id][1].append((ctx.author.id, reason, warn_id))
     except KeyError:
         first_warning = True
-        commands.warnings[ctx.guild.id][member.id] = [1, [(ctx.author.id, reason)]]
+        warn_id = 1
+        commands.warnings[ctx.guild.id][member.id] = [1, [(ctx.author.id, reason, warn_id)]]
     count = commands.warnings[ctx.guild.id][member.id][0]
     async with aiofiles.open(f"{ctx.guild.id}.txt", mode="a") as file:
-        await file.write(f"{member.id} {ctx.author.id} {reason}\n")
+        await file.write(f"{member.id} {ctx.author.id} {reason} {warn_id}\n")
     await ctx.send(
         f"{member.mention} has {count} {'warning' if first_warning else 'warnings'}."
     )
@@ -453,9 +455,15 @@ async def deletewarn(ctx, member: discord.Member = None, id: int = None):
     if id is None:
         return await ctx.send("Please provide a warning id to delete.")
     try:
-        commands.warnings[ctx.guild.id][member.id][0] -= 1
-        commands.warnings[ctx.guild.id][member.id][1].pop(id - 1)
-        return await ctx.send(f"Deleted warning {id} from {member}.")
+        async with aiofiles.open(f"{ctx.guild.id}.txt", mode="w") as file:
+            for lines in file.readlines():
+                line = lines.split(' ')
+                if str(line[3]) == str(id):
+                    commands.warnings[ctx.guild.id][member.id][0] -= 1
+                    commands.warnings[ctx.guild.id][member.id][1].pop(id - 1)
+                    return await ctx.send(f"Deleted warning {id} from {member}.")
+                else:
+                    await file.write(f"{line}\n")
     except Exception as e:
         return await ctx.send(f"{e}\nContact Venom120")
 
@@ -471,12 +479,9 @@ async def warnings(ctx, member: discord.Member = None):
         colour=discord.Colour.red(),
     )
     try:
-        i = 1
-        for admin_id, reason in commands.warnings[ctx.guild.id][member.id][1]:
+        for admin_id, reason, warning_id in commands.warnings[ctx.guild.id][member.id][1]:
             admin = ctx.guild.get_member(admin_id)
-            embed.description += f"**Warning {i}** given by: {admin} for: **'{reason}'**.\n"
-            i += 1
-        await ctx.send(commands.warnings[ctx.guild.id][member.id])
+            embed.description += f"**Warning {warning_id}** given by: {admin}, for: **'{reason}'**\n"
         await ctx.send(embed=embed)
     except KeyError:  # no warnings
         await ctx.send("This user has no warnings.")
