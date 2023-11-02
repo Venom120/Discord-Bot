@@ -1,13 +1,10 @@
 import discord
 from discord.ext import commands
 import random
-import json
 import os
 import asyncio
 from keep_alive import keep_alive
 import time
-import sys
-import traceback
 import aiofiles
 import requests
 import shutil
