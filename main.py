@@ -602,6 +602,7 @@ async def main():
     async with client:
         keep_alive()
         my_secret = os.environ["TOKEN"]
+        # my_secret = ""
         await load_extensions()
         await client.start(my_secret)
 
