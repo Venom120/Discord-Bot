@@ -2,4 +2,3 @@ discord
 aiofiles
 keep_alive
 requests
-shutil
