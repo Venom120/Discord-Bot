@@ -2,3 +2,4 @@ discord
 aiofiles
 keep_alive
 requests
+flask
