@@ -1,13 +1,10 @@
 import discord
 from discord.ext import commands
-import random
-import os
-import asyncio
+import random,os,json,time,aiofiles,requests,shutil,asyncio
 from keep_alive import keep_alive
-import time
-import aiofiles
-import requests
-import shutil
+
+secrets_path = "secrets.json" # Path to your secrets.json file (which contains the token)
+
 
 class CustomHelpCommand(commands.HelpCommand):
     def __init__(self):
@@ -601,11 +598,11 @@ async def load_extensions():
 async def main():
     async with client:
         keep_alive()
-        my_secret = os.environ["TOKEN"]
-        # my_secret = ""
+        # Load the token from the JSON file
+        with open(secrets_path, "r") as file:
+            config = json.load(file)
+            my_secret = config["DISCORD_TOKEN"]
         await load_extensions()
         await client.start(my_secret)
-
-
 
 asyncio.run(main())
