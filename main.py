@@ -597,7 +597,7 @@ async def load_extensions():
             print(f"{extension} not Loaded\n{e}")
 async def main():
     async with client:
-        # keep_alive()
+        keep_alive()
         # Load the token from the JSON file
         with open(secrets_path, "r") as file:
             config = json.load(file)
