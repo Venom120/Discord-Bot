@@ -1,8 +1,8 @@
 import sys
 import site
 
-site.addsitedir('/var/www/venom/env/lib/python3.8/site-packages')
+site.addsitedir('./.venv/lib/python3.12/site-packages/')
 
-sys.path.insert(0, '/var/www/venom')
+sys.path.insert(0, './')
 
-from app import app as application
+from keep_alive import app as application

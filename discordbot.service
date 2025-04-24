@@ -5,7 +5,7 @@ After=network.target
 [Service]
 User=root
 WorkingDirectory=/venom
-ExecStart=/venom/env/bin/python3 /venom/main.py
+ExecStart=./.venv/bin/gunicorn --bind 0.0.0.0:5000 wsgi:application
 Restart=always
 
 [Install]
