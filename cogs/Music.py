@@ -4,7 +4,7 @@ import asyncio
 import random
 from datetime import datetime
 from discord.ext import commands, tasks
-from music_streamer import MusicStreamer, Song
+from cogs.music_streamer import MusicStreamer, Song
 
 class Music(commands.Cog):
     def __init__(self, client):
@@ -93,11 +93,13 @@ class Music(commands.Cog):
         if not voice_client:
             return
         
+        print(f"🔍 Searching for: {song}")
         await ctx.send(f"🔍 Searching for: `{song}`")
         
         # Search for the song
         song_info = await self.streamer.search_song(song)
         if not song_info:
+            print(f"❌ No results found for: {song}")
             await ctx.send("❌ No results found!")
             return
         
