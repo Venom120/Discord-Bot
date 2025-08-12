@@ -5,4 +5,5 @@ requests
 flask
 pytz
 yt-dlp
-music-streamer
+PyNaCl
+discord.py[voice]

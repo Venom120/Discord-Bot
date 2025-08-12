@@ -33,15 +33,32 @@ class Music(commands.Cog):
             return None
         
         channel = ctx.author.voice.channel
-        if ctx.guild.id in self.voice_clients:
-            voice_client = self.voice_clients[ctx.guild.id]
-            if voice_client.channel != channel:
-                await voice_client.move_to(channel)
-        else:
-            voice_client = await channel.connect()
-            self.voice_clients[ctx.guild.id] = voice_client
         
-        return voice_client
+        # Check bot permissions
+        permissions = channel.permissions_for(ctx.guild.me)
+        if not permissions.connect or not permissions.speak:
+            await ctx.send("❌ I don't have permission to join/speak in that voice channel!")
+            return None
+        
+        try:
+            if ctx.guild.id in self.voice_clients:
+                voice_client = self.voice_clients[ctx.guild.id]
+                if voice_client.channel != channel:
+                    await voice_client.move_to(channel)
+                    await ctx.send(f"🔄 Moved to **{channel.name}**")
+            else:
+                voice_client = await channel.connect()
+                self.voice_clients[ctx.guild.id] = voice_client
+                await ctx.send(f"✅ Connected to **{channel.name}**")
+            
+            return voice_client
+            
+        except discord.ClientException as e:
+            await ctx.send(f"❌ Failed to connect to voice channel: {str(e)}")
+            return None
+        except asyncio.TimeoutError:
+            await ctx.send("❌ Timeout while trying to connect to voice channel!")
+            return None
 
     async def play_next(self, ctx):
         """Play the next song in queue"""
@@ -78,7 +95,12 @@ class Music(commands.Cog):
         audio_source = discord.PCMVolumeTransformer(audio_source, volume=volume)
         
         # Play the song
-        voice_client.play(audio_source, after=lambda e: asyncio.run_coroutine_threadsafe(self.play_next(ctx), self.client.loop))
+        def after_playing(error):
+            if error:
+                print(f'Player error: {error}')
+            asyncio.run_coroutine_threadsafe(self.play_next(ctx), self.client.loop)
+        
+        voice_client.play(audio_source, after=after_playing)
         
         embed = discord.Embed(title="🎵 Now Playing", color=0x00ff00)
         embed.add_field(name="Song", value=next_song.title, inline=False)
@@ -89,49 +111,74 @@ class Music(commands.Cog):
     @commands.command()
     async def play(self, ctx, *, song: str):
         """Play a song or add it to queue"""
+        # Check if user is in voice channel
+        if not ctx.author.voice:
+            await ctx.send("❌ You need to be in a voice channel to play music!")
+            return
+            
         voice_client = await self.join_voice_channel(ctx)
         if not voice_client:
             return
         
-        print(f"🔍 Searching for: {song}")
-        await ctx.send(f"🔍 Searching for: `{song}`")
+        # Send searching message
+        search_msg = await ctx.send(f"🔍 Searching for: `{song}`")
         
-        # Search for the song
-        song_info = await self.streamer.search_song(song)
-        if not song_info:
-            print(f"❌ No results found for: {song}")
-            await ctx.send("❌ No results found!")
-            return
-        
-        song_obj = Song(
-            title=song_info['title'],
-            url=song_info['url'],
-            duration=song_info['duration'],
-            requester=ctx.author
-        )
-        
-        queue = self.get_queue(ctx.guild.id)
-        
-        if voice_client.is_playing():
-            queue.append(song_obj)
-            embed = discord.Embed(title="📝 Added to Queue", color=0x0099ff)
-            embed.add_field(name="Song", value=song_obj.title, inline=False)
-            embed.add_field(name="Position", value=f"{len(queue)}", inline=True)
-            embed.add_field(name="Duration", value=song_obj.duration, inline=True)
-            await ctx.send(embed=embed)
-        else:
-            self.current_songs[ctx.guild.id] = song_obj
-            audio_source = await self.streamer.get_audio_source(song_obj.url)
-            if audio_source:
-                volume = self.volumes.get(ctx.guild.id, 0.5)
-                audio_source = discord.PCMVolumeTransformer(audio_source, volume=volume)
-                voice_client.play(audio_source, after=lambda e: asyncio.run_coroutine_threadsafe(self.play_next(ctx), self.client.loop))
-                
-                embed = discord.Embed(title="🎵 Now Playing", color=0x00ff00)
+        try:
+            # Search for the song
+            song_info = await self.streamer.search_song(song)
+            if not song_info:
+                await search_msg.edit(content="❌ No results found! Try a different search term.")
+                return
+            
+            song_obj = Song(
+                title=song_info['title'],
+                url=song_info['url'],
+                duration=song_info['duration'],
+                requester=ctx.author
+            )
+            
+            queue = self.get_queue(ctx.guild.id)
+            
+            if voice_client.is_playing() or voice_client.is_paused():
+                # Add to queue
+                queue.append(song_obj)
+                embed = discord.Embed(title="📝 Added to Queue", color=0x0099ff)
                 embed.add_field(name="Song", value=song_obj.title, inline=False)
+                embed.add_field(name="Position", value=f"{len(queue)}", inline=True)
                 embed.add_field(name="Duration", value=song_obj.duration, inline=True)
                 embed.add_field(name="Requested by", value=song_obj.requester.mention, inline=True)
-                await ctx.send(embed=embed)
+                await search_msg.edit(content="", embed=embed)
+            else:
+                # Play immediately
+                await search_msg.edit(content="🎵 Loading audio...")
+                self.current_songs[ctx.guild.id] = song_obj
+                audio_source = await self.streamer.get_audio_source(song_obj.url)
+                
+                if audio_source:
+                    volume = self.volumes.get(ctx.guild.id, 0.5)
+                    audio_source = discord.PCMVolumeTransformer(audio_source, volume=volume)
+                    
+                    def after_playing(error):
+                        if error:
+                            print(f'Player error: {error}')
+                        asyncio.run_coroutine_threadsafe(self.play_next(ctx), self.client.loop)
+                    
+                    voice_client.play(audio_source, after=after_playing)
+                    
+                    embed = discord.Embed(title="🎵 Now Playing", color=0x00ff00)
+                    embed.add_field(name="Song", value=song_obj.title, inline=False)
+                    embed.add_field(name="Duration", value=song_obj.duration, inline=True)
+                    embed.add_field(name="Requested by", value=song_obj.requester.mention, inline=True)
+                    embed.add_field(name="Volume", value=f"{int(volume * 100)}%", inline=True)
+                    await search_msg.edit(content="", embed=embed)
+                else:
+                    await search_msg.edit(content="❌ Failed to load audio source!")
+                    
+        except Exception as e:
+            await search_msg.edit(content=f"❌ An error occurred: {str(e)}")
+            print(f"Play command error: {e}")
+            import traceback
+            traceback.print_exc()
 
     @commands.command()
     async def pause(self, ctx):
@@ -300,42 +347,116 @@ class Music(commands.Cog):
     @commands.command()
     async def loop(self, ctx, mode: str = None):
         """Set loop mode: off, track, queue"""
-        pass
+        if mode is None:
+            current_mode = self.loop_modes.get(ctx.guild.id, 0)
+            modes = {0: "Off", 1: "Track", 2: "Queue"}
+            await ctx.send(f"🔄 Current loop mode: **{modes[current_mode]}**")
+            return
+        
+        mode = mode.lower()
+        if mode in ['off', '0', 'none']:
+            self.loop_modes[ctx.guild.id] = 0
+            await ctx.send("🔄 Loop mode set to: **Off**")
+        elif mode in ['track', '1', 'song']:
+            self.loop_modes[ctx.guild.id] = 1
+            await ctx.send("🔄 Loop mode set to: **Track**")
+        elif mode in ['queue', '2', 'all']:
+            self.loop_modes[ctx.guild.id] = 2
+            await ctx.send("🔄 Loop mode set to: **Queue**")
+        else:
+            await ctx.send("❌ Invalid loop mode! Use: `off`, `track`, or `queue`")
 
-    @commands.command()
+    @commands.command(aliases=['leave', 'dc'])
     async def disconnect(self, ctx):
         """Disconnect from voice channel"""
-        pass
+        voice_client = self.get_voice_client(ctx.guild)
+        if voice_client:
+            await voice_client.disconnect()
+            if ctx.guild.id in self.voice_clients:
+                del self.voice_clients[ctx.guild.id]
+            if ctx.guild.id in self.current_songs:
+                del self.current_songs[ctx.guild.id]
+            self.queues[ctx.guild.id] = []
+            await ctx.send("👋 Disconnected from voice channel!")
+        else:
+            await ctx.send("❌ Not connected to any voice channel!")
 
     @commands.command()
     async def join(self, ctx):
         """Join your voice channel"""
-        pass
+        if not ctx.author.voice:
+            await ctx.send("❌ You need to be in a voice channel!")
+            return
+        
+        voice_client = await self.join_voice_channel(ctx)
+        if voice_client:
+            await ctx.send(f"✅ Joined **{ctx.author.voice.channel.name}**!")
 
     @commands.command()
     async def lyrics(self, ctx, *, song: str = None):
         """Get lyrics for current or specified song"""
-        pass
+        if song is None:
+            if ctx.guild.id in self.current_songs:
+                song = self.current_songs[ctx.guild.id].title
+            else:
+                await ctx.send("❌ No song is currently playing! Specify a song name.")
+                return
+        
+        # Placeholder - you can implement lyrics API integration
+        await ctx.send(f"🎵 Lyrics search for **{song}** is coming soon!\n"
+                      "You can implement this using services like:\n"
+                      "• Genius API\n• AZLyrics scraping\n• LyricFind API")
 
     @commands.command()
     async def autoplay(self, ctx):
         """Toggle autoplay mode"""
-        pass
+        # Placeholder for autoplay functionality
+        await ctx.send("🎲 Autoplay feature coming soon!\n"
+                      "This will automatically add related songs when the queue is empty.")
 
     @commands.command()
-    async def history(self, ctx):
+    async def history(self, ctx, limit: int = 10):
         """Show recently played songs"""
-        pass
+        # Placeholder - you would need to implement song history tracking
+        await ctx.send(f"📜 Song history (last {limit} songs) feature coming soon!\n"
+                      "This will show recently played tracks.")
 
     @commands.command()
     async def remove(self, ctx, index: int):
         """Remove song from queue by index"""
-        pass
+        queue = self.get_queue(ctx.guild.id)
+        if not queue:
+            await ctx.send("❌ Queue is empty!")
+            return
+        
+        if index < 1 or index > len(queue):
+            await ctx.send(f"❌ Invalid index! Use a number between 1 and {len(queue)}")
+            return
+        
+        removed_song = queue.pop(index - 1)
+        await ctx.send(f"🗑️ Removed **{removed_song.title}** from queue!")
 
     @commands.command()
     async def move(self, ctx, from_pos: int, to_pos: int):
         """Move song in queue"""
-        pass
+        queue = self.get_queue(ctx.guild.id)
+        if not queue:
+            await ctx.send("❌ Queue is empty!")
+            return
+        
+        if from_pos < 1 or from_pos > len(queue) or to_pos < 1 or to_pos > len(queue):
+            await ctx.send(f"❌ Invalid position! Use numbers between 1 and {len(queue)}")
+            return
+        
+        # Convert to 0-based indexing
+        from_idx = from_pos - 1
+        to_idx = to_pos - 1
+        
+        # Move the song
+        song = queue.pop(from_idx)
+        queue.insert(to_idx, song)
+        
+        await ctx.send(f"✅ Moved **{song.title}** from position {from_pos} to {to_pos}!")
 
     @commands.command()
     async def music_help(self, ctx):
