@@ -11,3 +11,4 @@ build/
 *.whl
 *.log
 *.toml
+secrets.json

@@ -221,8 +221,54 @@ class CustomHelpCommand(commands.HelpCommand):
             name="Examples->", value='vroll <number> \nvroll 1000 \nvroll 50'
             )
             await self.get_destination().send(embed=embed)
+
+        elif command.qualified_name.lower() == "music":
+            """Show music commands help"""
+            embed = discord.Embed(title="🎵 Music Bot Commands", color=0x0099ff)
+            
+            playback_cmds = """
+            `vplay <song>` - Play a song or add to queue
+            `vpause` - Pause current song
+            `vresume` - Resume paused song
+            `vstop` - Stop music and clear queue
+            `vskip` or `vnext` - Skip current song
+            `vprevious` - Go to previous song
+            `vvolume <0-100>` - Set volume
+            `vforward <seconds>` - Fast forward
+            `vrewind <seconds>` - Rewind
+            """
+            
+            queue_cmds = """
+            `vqueue` or `vq` - Show queue
+            `vclear_queue` - Clear queue
+            `vshuffle` - Shuffle queue
+            `vremove <index>` - Remove song from queue
+            `vmove <from> <to>` - Move song in queue
+            """
+            
+            info_cmds = """
+            `vnowplaying` or `vnp` - Current song info
+            `vsearch <query>` - Search for songs
+            `vlyrics [song]` - Get song lyrics
+            `vhistory` - Recently played songs
+            """
+            
+            utility_cmds = """
+            `vjoin` - Join your voice channel
+            `vdisconnect` - Leave voice channel
+            `vloop <off/track/queue>` - Set loop mode
+            `vautoplay` - Toggle autoplay
+            """
+            
+            embed.add_field(name="🎮 Playback", value=playback_cmds, inline=False)
+            embed.add_field(name="📝 Queue Management", value=queue_cmds, inline=False)
+            embed.add_field(name="ℹ️ Information", value=info_cmds, inline=False)
+            embed.add_field(name="🔧 Utility", value=utility_cmds, inline=False)
+            
+            embed.set_footer(text="Use !music_help to see this message again")
+            await self.get_destination().send(embed=embed)
         else:
-                await self.get_destination().send("command not found!")
+            await self.get_destination().send("command not found!")
 
 
 intents = discord.Intents.all()
@@ -588,7 +634,7 @@ async def uploademoji_error(ctx, error):
 
 
 
-extensions = ["cogs.Moderation", "cogs.Poll","cogs.WelcomeLeave"]
+extensions = ["cogs.Moderation", "cogs.Poll","cogs.WelcomeLeave", "cogs.Music"]
 async def load_extensions():
     for extension in extensions:
         try:
