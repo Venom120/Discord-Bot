@@ -459,7 +459,7 @@ class Music(commands.Cog):
         await ctx.send(f"✅ Moved **{song.title}** from position {from_pos} to {to_pos}!")
 
     @commands.command()
-    async def music_help(self, ctx):
+    async def music(self, ctx):
         """Show music commands help"""
         embed = discord.Embed(title="🎵 Music Bot Commands", color=0x0099ff)
         
