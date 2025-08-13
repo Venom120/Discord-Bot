@@ -2,6 +2,7 @@ import json
 import discord
 import asyncio
 import random
+import os
 from datetime import datetime
 from discord.ext import commands, tasks
 from .music_streamer import MusicStreamer, Song
@@ -9,13 +10,55 @@ from .music_streamer import MusicStreamer, Song
 class Music(commands.Cog):
     def __init__(self, client):
         self.client = client
-        self.streamer = MusicStreamer()
+        
+        # Load configuration
+        self.config = self.load_config()
+        
+        # Initialize streamer with cookies if available
+        cookies_file = None
+        if self.config.get('use_cookies', True):
+            cookies_path = self.config.get('youtube_cookies_file', 'cookies.txt')
+            if os.path.exists(cookies_path):
+                cookies_file = cookies_path
+                print(f"✅ Using YouTube cookies from: {cookies_path}")
+            else:
+                print(f"⚠️  Cookies file not found: {cookies_path}")
+        
+        self.streamer = MusicStreamer(cookies_file=cookies_file)
         self.queues = {}  # Guild-specific queues
         self.current_songs = {}  # Currently playing songs per guild
         self.voice_clients = {}  # Voice clients per guild
         self.loop_modes = {}  # Loop modes: 0=off, 1=track, 2=queue
         self.volumes = {}  # Volume levels per guild (default 0.5)
         self.skip_override_loop = {} # Flag to make skip command ignore loop track
+
+    def load_config(self):
+        """Load configuration from config.json"""
+        try:
+            if os.path.exists('config.json'):
+                with open('config.json', 'r') as f:
+                    return json.load(f)
+            else:
+                # Create default config if it doesn't exist
+                default_config = {
+                    "youtube_cookies_file": "cookies.txt",
+                    "youtube_username": "",
+                    "youtube_password": "",
+                    "use_cookies": True,
+                    "fallback_to_anonymous": True
+                }
+                with open('config.json', 'w') as f:
+                    json.dump(default_config, f, indent=4)
+                return default_config
+        except Exception as e:
+            print(f"Error loading config: {e}")
+            return {
+                "youtube_cookies_file": "cookies.txt",
+                "youtube_username": "",
+                "youtube_password": "",
+                "use_cookies": True,
+                "fallback_to_anonymous": True
+            }
 
     def get_queue(self, guild_id):
         """Get or create queue for guild"""

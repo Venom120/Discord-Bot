@@ -15,7 +15,7 @@ class Song:
 class MusicStreamer:
     """Handles music streaming from various sources using yt-dlp"""
     
-    def __init__(self):
+    def __init__(self, cookies_file=None):
         self.ytdl_format_options = {
             'format': 'bestaudio/best',
             'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
@@ -31,7 +31,14 @@ class MusicStreamer:
             'extractaudio': True,
             'audioformat': 'mp3',
             'audioquality': 192,
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            # Add cookie authentication if cookies file is provided
+            'cookiefile': cookies_file if cookies_file else None,
+            # Additional options to help with authentication issues
+            'extractor_retries': 3,
+            'fragment_retries': 3,
+            'retry_sleep': 1,
+            'max_sleep_interval': 5,
         }
 
         self.ffmpeg_options = {
