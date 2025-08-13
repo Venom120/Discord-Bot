@@ -35,15 +35,33 @@ class MusicStreamer:
             # Add cookie authentication if cookies file is provided
             'cookiefile': cookies_file if cookies_file else None,
             # Additional options to help with authentication issues
-            'extractor_retries': 3,
-            'fragment_retries': 3,
-            'retry_sleep': 1,
-            'max_sleep_interval': 5,
+            'extractor_retries': 5,
+            'fragment_retries': 5,
+            'retry_sleep': 2,
+            'max_sleep_interval': 10,
+            # Additional headers to mimic real browser
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-us,en;q=0.5',
+                'Accept-Encoding': 'gzip,deflate',
+                'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.7',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+            },
+            # Additional options for better compatibility
+            'socket_timeout': 30,
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android'],
+                    'player_skip': ['webpage', 'configs'],
+                }
+            },
         }
 
         self.ffmpeg_options = {
-            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-            'options': '-vn'
+            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -timeout 30000000',
+            'options': '-vn -acodec libopus -b:a 128k'
         }
 
         self.ytdl = yt_dlp.YoutubeDL(self.ytdl_format_options)
@@ -206,6 +224,7 @@ class MusicStreamer:
             )
             
             if not data:
+                print(f"Failed to extract info for {url}")
                 return None
             
             # Get the best audio format URL
@@ -215,12 +234,44 @@ class MusicStreamer:
             else:
                 audio_url = data['url']
             
-            # Create Discord audio source
-            source = discord.FFmpegPCMAudio(audio_url, **self.ffmpeg_options)
+            # Add additional headers to FFmpeg options for better compatibility
+            enhanced_ffmpeg_options = self.ffmpeg_options.copy()
+            enhanced_ffmpeg_options['before_options'] += ' -headers "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"'
+            
+            # Create Discord audio source with enhanced options
+            source = discord.FFmpegPCMAudio(audio_url, **enhanced_ffmpeg_options)
             return source
             
         except Exception as e:
-            print(f"Error getting audio source: {e}")
+            print(f"Error getting audio source for {url}: {e}")
+            
+            # Try alternative method if first fails
+            try:
+                print("Attempting alternative audio extraction method...")
+                loop = asyncio.get_event_loop()
+                
+                # Try with different format options
+                alt_options = self.ytdl_format_options.copy()
+                alt_options['format'] = 'worstaudio/worst'  # Try worst quality first
+                
+                alt_ytdl = yt_dlp.YoutubeDL(alt_options)
+                data = await loop.run_in_executor(
+                    None,
+                    lambda: alt_ytdl.extract_info(url, download=False)
+                )
+                
+                if data and 'url' in data:
+                    audio_url = data['url']
+                    enhanced_ffmpeg_options = self.ffmpeg_options.copy()
+                    enhanced_ffmpeg_options['before_options'] += ' -headers "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"'
+                    
+                    source = discord.FFmpegPCMAudio(audio_url, **enhanced_ffmpeg_options)
+                    print("Alternative method succeeded!")
+                    return source
+                    
+            except Exception as alt_e:
+                print(f"Alternative method also failed: {alt_e}")
+            
             return None
 
     async def get_playlist_info(self, url):
